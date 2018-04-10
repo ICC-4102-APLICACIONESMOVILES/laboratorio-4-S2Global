@@ -1,9 +1,12 @@
 package mechero.lab2_franciscoalvarez;
 
 import android.arch.persistence.room.*;
+import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.design.widget.NavigationView;
+import android.support.v4.app.FragmentTransaction;
 import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBar;
@@ -11,8 +14,12 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.Button;
 import android.widget.EditText;
+import android.widget.FrameLayout;
 import android.widget.Spinner;
+import android.widget.TextView;
+import android.widget.Toast;
 
 import java.util.List;
 
@@ -21,12 +28,27 @@ public class MainActivity extends AppCompatActivity {
     private DrawerLayout mDrawerLayout;
     private static final String DATABASE_NAME = "poll_db";
     private PollDatabase pollDatabase;
+    public static SharedPreferences prefs;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        prefs = getSharedPreferences(MY_PREFS_NAME, MODE_PRIVATE);
+
+        String email = prefs.getString("Email",null);
+        String password = prefs.getString("Password",null);
+        Button btn = (Button) findViewById(R.id.button);
+        TextView mail = (TextView) findViewById(R.id.fin1);
+        if (email == null && password == null) {
+            btn.setText("Log Out");
+            loginGo();
+        }
+        else {
+            btn.setText("clear");
+            mail.setText(email);
+        }
 
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
@@ -35,7 +57,6 @@ public class MainActivity extends AppCompatActivity {
         actionbar.setHomeAsUpIndicator(R.drawable.ic_menu);
 
         mDrawerLayout = findViewById(R.id.drawer_layout);
-
 
         pollDatabase = Room.databaseBuilder(getApplicationContext(), PollDatabase.class, DATABASE_NAME).build();
 
@@ -126,6 +147,51 @@ public class MainActivity extends AppCompatActivity {
             }
         }) .start();
 
+    }
+
+    public static final String MY_PREFS_NAME = "MyPrefsFile";
+
+    public void button(View v){
+        String email = prefs.getString("Email",null);
+        String password = prefs.getString("Password",null);
+        Button btn = (Button) findViewById(R.id.button);
+        if (email != null && password != null) {
+            clear(v);
+            btn.setText("Log In");
+        }
+        else{
+            loginGo();
+            btn.setText("Log Out");
+        }
+    }
+
+    public void clear(View v){
+        SharedPreferences.Editor editor = prefs.edit();
+        editor.clear();
+        editor.remove("Email");
+        editor.remove("Password");
+        TextView mail = (TextView) findViewById(R.id.fin1);
+        mail.setText("Not Logged In");
+        editor.apply();
+
+    }
+
+    public void loginGo(){
+        TextView mail = (TextView) findViewById(R.id.fin1);
+        Intent data = new Intent(this, Login.class);
+        data.putExtra("Email", "example@mail.com");
+        data.putExtra("Password", "0000");
+        startActivityForResult(data,20);
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        if (resultCode == RESULT_OK && requestCode == 20) {
+            TextView mail = (TextView) findViewById(R.id.fin1);
+            mail.setText(data.getExtras().getString("Email"));
+            Credencials creds = new Credencials(this);
+            creds.setCreds(RESULT_OK,20, data, MY_PREFS_NAME);
+        }
     }
 
     @Override
